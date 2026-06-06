@@ -27,6 +27,18 @@ go.work.sum
 # env file
 .env
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# macOS — Finder metadata files, will appear everywhere if you don't ignore them
+.DS_Store
+
+# IDE / editor folders
+.vscode/
+.idea/
+
+# Local SQLite databases (you'll use SQLite for app metadata starting Week 2)
+*.db
+*.sqlite
+*.sqlite-journal
+
+# Compiled binary output
+/platform
+/bin/
