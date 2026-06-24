@@ -2,15 +2,29 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	_ "modernc.org/sqlite"
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 type server struct {
 	db *sql.DB
+}
+
+type createAppReq struct {
+	Name string `json:"name"`
+}
+
+type appInfo struct {
+	Name         string `json:"name"`
+	Container_id string `json:"container_id"`
+	Port         int    `json:"port"`
+	Status       string `json:"status"`
 }
 
 func main() {
@@ -23,36 +37,76 @@ func main() {
 
 	defer db.Close()
 
-	_, err2 := db.Exec(`CREATE TABLE IF NOT EXISTS apps (
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS apps (
 		name TEXT PRIMARY KEY,
 		container_id TEXT,
 		port INTEGER,
 		status TEXT
 	)`)
 
-	if err2 != nil {
-		log.Fatal(err2)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	s := &server{db: db}
 
 	r.Post("/apps", s.ok)
-	r.Get("/apps/{id}", s.getAppId)
+	r.Get("/apps/{name}", s.getAppId)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func (s *server) ok(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte("ok"))
+func (s *server) ok(w http.ResponseWriter, r *http.Request) {
+	var req createAppReq
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, "Empty Name", http.StatusBadRequest)
+		return
+	}
+
+	_, err = s.db.Exec("INSERT INTO apps (name, container_id, port, status) VALUES (?, ?, ?, ?)",
+		req.Name, "", 0, "created")
+
+	var sqliteErr *sqlite.Error
+	if errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY {
+		http.Error(w, "app name already taken", http.StatusConflict)
+		return
+	}
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *server) getAppId(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	//result, err := s.db.Exec(fmt.Sprintf(`SELECT name, port, status WHERE container_id = %s`, id))
+	var app appInfo
+	name := chi.URLParam(r, "name")
+	err := s.db.
+		QueryRow(`SELECT name, container_id, port, status FROM apps WHERE name = ?`, name).
+		Scan(&app.Name, &app.Container_id, &app.Port, &app.Status)
 
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "", http.StatusNotFound)
+		return
+	}
 
-	w.Write([]byte(id))
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&app)
 }
