@@ -42,3 +42,6 @@ go.work.sum
 # Compiled binary output
 /platform
 /bin/
+
+paas
+paas.db

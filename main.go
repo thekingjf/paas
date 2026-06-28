@@ -7,13 +7,15 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	sqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
 type server struct {
-	db *sql.DB
+	db     *sql.DB
+	docker *client.Client
 }
 
 type createAppReq struct {
@@ -48,7 +50,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s := &server{db: db}
+	dockerCli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dockerCli.Close()
+
+	s := &server{db: db, docker: dockerCli}
 
 	r.Post("/apps", s.ok)
 	r.Get("/apps/{name}", s.getAppId)
