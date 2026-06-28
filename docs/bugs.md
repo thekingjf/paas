@@ -25,3 +25,17 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
                     effect of init() so a missing driver fails at runtime if you 
                     only use the types and fails at compile if you only use
                     the registration
+
+### Go Docker Modules
+- **Symptom:** go get github.com/docker/docker/client would return module declares
+               its path as github.com/moby/moby/client but was required as 
+               github.com/docker/docker/client.
+- **Cause:** docker/docker/client used to just be a package in docker/docker but
+             when they migrated it split the client into moby/moby/client
+- **Fix / lesson:** pinned the parent docker/docker@v28.5.2+incompatible which is
+                    old and unused will definitely modernize soon and also ran
+                    go mod tidy. Learned a bug like declares its path as X but 
+                    required as Y usually means a package got renamed/moved and to
+                    fix it use the new path or pin a parent version that still
+                    uses it
+                    

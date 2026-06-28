@@ -48,3 +48,13 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Chose:** I chose to use Errors is
 - **Why:** When I need to check an error I know it's between if I need to match
            it(Is) or if I need to extract it(As)
+
+### Docker Migration
+- **Fork:** stay on docker/docker@v28(old) or migrate moby/moby/client
+- **Chose:** I chose to migrate to the newer docker version instead of staying
+             on the old frozen version
+- **Why:** I chose to migrate to the newer version because it's reflective of the
+           current state of docker which is most likely actually used by the 
+           majority of people and since it's early on I won't need to make deep 
+           changes and can avoid potential bugs that the old version help that were
+           fixed in the newer version before i ever run into them
