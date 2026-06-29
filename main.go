@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
+	"github.com/moby/moby/client"
 	sqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
@@ -50,7 +50,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dockerCli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerCli, err := client.New(client.FromEnv)
 	if err != nil {
 		log.Fatal(err)
 	}
