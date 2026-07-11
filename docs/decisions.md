@@ -74,3 +74,19 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Why:** Contexts are small and simpler but if given a huge file it would all
            be loaded into the RAM but context are source files, so in practice
            it won't ever be too bad
+
+### Tarring Locaiton
+- **Fork:** Tarring on client vs server
+- **Chose:** I chose to tar the files on the clients side before sending it to the
+             server
+- **Why:** I chose to tar the files on the clients side because it gives the server
+           a tar file it can immediately work with instead of running around and
+           tarring the files itself but in exchange the server now trust whatever
+           the client sends over and this would make it incompatible on a browser
+
+### Route Separation
+- **Fork:** Edit existing create function for deploy or giving deploy it's own function
+- **Chose:** I chose to give deploy it's own function
+- **Why:** i chose to give deploy it's own function because someone can create
+           an app but not deploy it and also creating a app tends to only happen
+           once while deploying happen many times

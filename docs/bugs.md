@@ -39,3 +39,12 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
                     fix it use the new path or pin a parent version that still
                     uses it
                     
+### 
+- **Symptom:** POST /apps/blog/deploy build failed with 500 / build failed. Server 
+               log showed the real error: Error response from daemon: lsetxattr 
+               /Dockerfile: xattr "com.apple.provenance": operation not supported
+- **Cause:** The daemon failed to unpack apple specific attributes since they aren't
+             recognized on linux systems
+- **Fix / lesson:** rebuilt the tar without the attributes. Lesson learned was 
+                    different tarring tools create different tars when given the
+                    same content
