@@ -54,7 +54,23 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Chose:** I chose to migrate to the newer docker version instead of staying
              on the old frozen version
 - **Why:** I chose to migrate to the newer version because it's reflective of the
-           current state of docker which is most likely actually used by the 
-           majority of people and since it's early on I won't need to make deep 
-           changes and can avoid potential bugs that the old version help that were
-           fixed in the newer version before i ever run into them
+           current state of docker which is the path docker supports moving forward
+           and since it's early on I won't need to make deep changes and can avoid 
+           potential bugs that the old version help that were fixed in the newer 
+           version before i ever run into them. Although the trade off is mostly
+           coverage since most tutorials/articles will be based off of the older
+           version
+
+### Tar Contents of Context Directory
+- **Fork:** Tar content of context directory or the directory itself
+- **Chose:** I choose to tar the content of the context directory
+- **Why:** It matches how docker build treats context, so the docker paths
+           resolve but in exchange you must point at whose contents are the root
+           and if you give it at the wrong level you silently get wrong paths
+
+### File in Memory
+- **Fork:** File in memory(os.ReadFile) vs Streamed(io.Copy)
+- **Chose:** I choose to store the files in memory
+- **Why:** Contexts are small and simpler but if given a huge file it would all
+           be loaded into the RAM but context are source files, so in practice
+           it won't ever be too bad

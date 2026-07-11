@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -62,13 +63,34 @@ func main() {
 
 	s := &server{db: db, docker: dockerCli}
 
-	r.Post("/apps", s.ok)
+	r.Post("/apps", s.create)
 	r.Get("/apps/{name}", s.getAppId)
+	r.Post("/apps/{name}/deploy", s.deploy)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+
 }
 
-func (s *server) ok(w http.ResponseWriter, r *http.Request) {
+func (s *server) deploy(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+
+	options := client.ImageBuildOptions{Tags: []string{name + ":latest"},
+		Dockerfile: "Dockerfile"}
+
+	result, err := s.docker.ImageBuild(r.Context(), r.Body, options)
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "build failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	defer result.Body.Close()
+	io.Copy(os.Stdout, result.Body)
+}
+
+func (s *server) create(w http.ResponseWriter, r *http.Request) {
 	var req createAppReq
 
 	err := json.NewDecoder(r.Body).Decode(&req)
