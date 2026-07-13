@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -32,6 +33,10 @@ type appInfo struct {
 	Container_id string `json:"container_id"`
 	Port         int    `json:"port"`
 	Status       string `json:"status"`
+}
+type buildEvent struct {
+	Stream string `json:"stream"`
+	Error  string `json:"error"`
 }
 
 func main() {
@@ -85,9 +90,36 @@ func (s *server) deploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
 	defer result.Body.Close()
-	io.Copy(os.Stdout, result.Body)
+
+	decoder := json.NewDecoder(result.Body)
+	event := buildEvent{}
+
+	for {
+		err = decoder.Decode(&event)
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Build stream failed", http.StatusInternalServerError)
+			return
+		}
+
+		if event.Error != "" {
+			log.Println(event.Error)
+			http.Error(w, "build failed", http.StatusInternalServerError)
+			return
+		}
+
+		if event.Stream != "" {
+			fmt.Print(event.Stream)
+		}
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *server) create(w http.ResponseWriter, r *http.Request) {

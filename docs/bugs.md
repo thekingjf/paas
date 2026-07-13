@@ -39,7 +39,7 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
                     fix it use the new path or pin a parent version that still
                     uses it
                     
-### 
+### macOS xattrs in build tar
 - **Symptom:** POST /apps/blog/deploy build failed with 500 / build failed. Server 
                log showed the real error: Error response from daemon: lsetxattr 
                /Dockerfile: xattr "com.apple.provenance": operation not supported

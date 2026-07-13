@@ -90,3 +90,9 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Why:** i chose to give deploy it's own function because someone can create
            an app but not deploy it and also creating a app tends to only happen
            once while deploying happen many times
+
+### Stream Error
+- **Fork:** Use stdlib decoder or moby's jsonmessage helper
+- **Chose:** I chose to use the stdlib decoder
+- **Why:** I chose that because I experimented with using moby's jsonmessage helper
+           and it broke the project by brining in a incompatible version 
