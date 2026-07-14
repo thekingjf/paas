@@ -12,8 +12,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
 	sqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
@@ -79,6 +82,20 @@ func main() {
 func (s *server) deploy(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 
+	var containerID string
+	err := s.db.QueryRow(`SELECT container_id FROM apps WHERE name = ?`, name).Scan(&containerID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "App not found", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
 	options := client.ImageBuildOptions{Tags: []string{name + ":latest"},
 		Dockerfile: "Dockerfile"}
 
@@ -117,6 +134,97 @@ func (s *server) deploy(w http.ResponseWriter, r *http.Request) {
 		if event.Stream != "" {
 			fmt.Print(event.Stream)
 		}
+	}
+
+	if containerID != "" {
+		_, err = s.docker.ContainerStop(r.Context(), containerID, client.ContainerStopOptions{})
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Failed to stop existing container", http.StatusInternalServerError)
+			return
+		}
+
+		_, err = s.docker.ContainerRemove(r.Context(), containerID, client.ContainerRemoveOptions{})
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Container removal failed", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	port, err := network.ParsePort("8080/tcp")
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Port binding failed", http.StatusInternalServerError)
+		return
+	}
+
+	createOptions := client.ContainerCreateOptions{
+		Image: name + ":latest",
+		Name:  name,
+		Config: &container.Config{
+			ExposedPorts: network.PortSet{port: struct{}{}},
+		},
+		HostConfig: &container.HostConfig{
+			PortBindings: network.PortMap{
+				port: []network.PortBinding{
+					{HostPort: ""}}},
+		},
+	}
+
+	response, err := s.docker.ContainerCreate(r.Context(), createOptions)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Container creation failed", http.StatusInternalServerError)
+		return
+	}
+	containerID = response.ID
+
+	_, err = s.docker.ContainerStart(r.Context(), containerID, client.ContainerStartOptions{})
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Failed to start container", http.StatusInternalServerError)
+		return
+	}
+
+	inspectResponse, err := s.docker.ContainerInspect(r.Context(), containerID, client.ContainerInspectOptions{})
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Container inpsection failed", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("%+v\n", inspectResponse.Container.NetworkSettings.Ports)
+	bindings := inspectResponse.Container.NetworkSettings.Ports[port]
+
+	if len(bindings) == 0 {
+		log.Println(err)
+		http.Error(w, "No valid port binding provided", http.StatusInternalServerError)
+		return
+	}
+	hostPort := bindings[0].HostPort
+
+	portNum, err := strconv.Atoi(hostPort)
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Atoi failed", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = s.db.Exec(
+		`UPDATE apps SET container_id = ?, port = ?, status = ? WHERE name = ?`,
+		containerID, portNum, "running", name,
+	)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Database update failed", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
