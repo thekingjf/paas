@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func streamIn(folderLocation string) (*bytes.Buffer, error) {
+func StreamIn(folderLocation string) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 	folder, err := filepath.Abs(folderLocation)
 	writer := tar.NewWriter(&buf)
