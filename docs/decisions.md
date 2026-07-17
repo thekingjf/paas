@@ -96,3 +96,16 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Chose:** I chose to use the stdlib decoder
 - **Why:** I chose that because I experimented with using moby's jsonmessage helper
            and it broke the project by brining in a incompatible version 
+
+### Traffic routing
+- **Fork:** middleware in front of chi vs host based routing inside chi
+- **Chose:** I chose middleware in front of chi
+- **Why:** I chose middleware in front of chi because it gave a concrete line
+           of to split traffic to apps and commands about apps. With that i did
+           accept that proxied request bypass all the chi middleware
+
+### URL Shape
+- **Fork:** Fixed vs arbitrary
+- **Chose:** I choose fixed names (<name>.localhost) against arbitrary
+- **Why:** I choose fixed names over arbitrary because it allows me to easily
+           handle all inputs with the only big cost being no custom names

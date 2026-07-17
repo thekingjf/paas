@@ -10,9 +10,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/moby/moby/api/types/container"
@@ -75,7 +78,54 @@ func main() {
 	r.Get("/apps/{name}", s.getAppId)
 	r.Post("/apps/{name}/deploy", s.deploy)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":8080", s.hostRouter(r)))
+
+}
+
+func (s *server) hostRouter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hostname := strings.Split(r.Host, ":")[0]
+		parts := strings.Split(hostname, ".")
+
+		if len(parts) != 2 || parts[1] != "localhost" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		name := parts[0]
+
+		var port int
+		var status string
+		err := s.db.QueryRow(`SELECT port, status FROM apps WHERE name = ?`, name).Scan(&port, &status)
+
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "No such app", http.StatusNotFound)
+			return
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
+
+		if status != "running" {
+			http.Error(w, "app not deployed", http.StatusServiceUnavailable)
+			return
+		}
+
+		target, err := url.Parse("http://localhost:" + strconv.Itoa(port))
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
+
+		proxy := httputil.NewSingleHostReverseProxy(target)
+		proxy.ServeHTTP(w, r)
+
+	})
 
 }
 
