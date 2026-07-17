@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/thekingjf/paas/internal/tarutil"
 )
@@ -19,11 +22,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	buf, err := tarutil.StreamIn(os.Args[2])
+	dir := os.Args[2]
+	buf, err := tarutil.StreamIn(dir)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("tar bytes:", buf.Len())
+	name := filepath.Base(filepath.Clean(dir))
+	resp, err := http.Post(
+		"http://localhost:8080/apps/"+name+"/deploy",
+		"application/x-tar",
+		buf,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Fprintf(os.Stderr, "deploy failed (%d): %s\n", resp.StatusCode, body)
+		os.Exit(1)
+	}
+
+	fmt.Println("deployed: http://" + name + ".localhost:8080")
 }

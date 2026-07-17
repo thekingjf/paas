@@ -109,3 +109,14 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Chose:** I choose fixed names (<name>.localhost) against arbitrary
 - **Why:** I choose fixed names over arbitrary because it allows me to easily
            handle all inputs with the only big cost being no custom names
+
+### App source name
+- **Fork:** basename of the deploy dir (filepath.Base(filepath.Clean(dir))) over
+            an explicit deploy <name> <dir> arg.
+- **Chose:** I chose to do the basename of the deploy dir
+- **Why:** Matches Vercel/Heroku convention over configuration. With this choice
+           name is coupled to the folder, deploying one dir under two names means
+           renaming it
+- **Note:** spent ~10 min deliberating a two-line reversible choice. Calibration 
+            lesson: reversible one-file decisions get minutes; deliberation 
+            budget should track cost-of-being-wrong 
