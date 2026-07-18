@@ -27,7 +27,7 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
             - pass db into every handler
             - Hang it onto a struct and with handler methods
 - **Chose:** I chose to hang it on a struct with handler methods
-- **Why:** A struct scales cleanly as dependcies increase and make handlers testable
+- **Why:** A struct scales cleanly as dependencies increase and makes handlers testable
 
 ### Parameterized Queries
 - **Fork:** Fmt.sprintf vs ? placeholders for the sql string
@@ -39,15 +39,9 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 ### No Nulls Default Fill
 - **Fork:** Inserting basic placeholder values vs leaving them NULL
 - **Chose:** I chose to insert basic placeholder values("", 0, "created")
-- **Why:** I chose to insert placeholders because a created row in this databse 
-           implies existence so the placeholder values are geninune and not covering  
+- **Why:** I chose to insert placeholders because a created row in this database 
+           implies existence so the placeholder values are genuine and not covering  
            for missing data.
-
-### Errors.Is vs Errors.As
-- **Fork:** Recognizing which to use
-- **Chose:** I chose to use Errors is
-- **Why:** When I need to check an error I know it's between if I need to match
-           it(Is) or if I need to extract it(As)
 
 ### Docker Migration
 - **Fork:** stay on docker/docker@v28(old) or migrate moby/moby/client
@@ -56,58 +50,66 @@ When unsure, log it — under-logging (forgetting a good story) is the bigger ri
 - **Why:** I chose to migrate to the newer version because it's reflective of the
            current state of docker which is the path docker supports moving forward
            and since it's early on I won't need to make deep changes and can avoid 
-           potential bugs that the old version help that were fixed in the newer 
+           potential bugs that the old version had that were fixed in the newer 
            version before i ever run into them. Although the trade off is mostly
            coverage since most tutorials/articles will be based off of the older
            version
+- **Note:** the coverage cost turned out real and measurable — v28 tutorials 
+            pointed me at wrong package locations three separate times 
+            (ImageBuildOptions, ContainerCreateOptions, the port types), and 
+            pulling in jsonmessage later re-created the exact +incompatible 
+            module conflict this migration had solved
 
 ### Tar Contents of Context Directory
 - **Fork:** Tar content of context directory or the directory itself
-- **Chose:** I choose to tar the content of the context directory
+- **Chose:** I chose to tar the content of the context directory
 - **Why:** It matches how docker build treats context, so the docker paths
            resolve but in exchange you must point at whose contents are the root
            and if you give it at the wrong level you silently get wrong paths
 
 ### File in Memory
 - **Fork:** File in memory(os.ReadFile) vs Streamed(io.Copy)
-- **Chose:** I choose to store the files in memory
+- **Chose:** I chose to store the files in memory
 - **Why:** Contexts are small and simpler but if given a huge file it would all
-           be loaded into the RAM but context are source files, so in practice
+           be loaded into the RAM but contexts are source files, so in practice
            it won't ever be too bad
 
-### Tarring Locaiton
+### Tarring Location
 - **Fork:** Tarring on client vs server
 - **Chose:** I chose to tar the files on the clients side before sending it to the
              server
 - **Why:** I chose to tar the files on the clients side because it gives the server
            a tar file it can immediately work with instead of running around and
-           tarring the files itself but in exchange the server now trust whatever
+           tarring the files itself but in exchange the server now trusts whatever
            the client sends over and this would make it incompatible on a browser
 
 ### Route Separation
 - **Fork:** Edit existing create function for deploy or giving deploy it's own function
 - **Chose:** I chose to give deploy it's own function
-- **Why:** i chose to give deploy it's own function because someone can create
-           an app but not deploy it and also creating a app tends to only happen
-           once while deploying happen many times
+- **Why:** I chose to give deploy it's own function because someone can create
+           an app but not deploy it and also creating an app tends to only happen
+           once while deploying happens many times
 
 ### Stream Error
 - **Fork:** Use stdlib decoder or moby's jsonmessage helper
 - **Chose:** I chose to use the stdlib decoder
-- **Why:** I chose that because I experimented with using moby's jsonmessage helper
-           and it broke the project by brining in a incompatible version 
+- **Why:** I chose stdlib decoder because I experimented with using moby's 
+           jsonmessage helper and it broke the project by bringing back 
+           moby/moby v28+incompatible: the exact module conflict the v29 migration
+           solved. It's also a terminal-display function, and there's no terminal 
+           in an HTTP handler.
 
 ### Traffic routing
 - **Fork:** middleware in front of chi vs host based routing inside chi
 - **Chose:** I chose middleware in front of chi
 - **Why:** I chose middleware in front of chi because it gave a concrete line
-           of to split traffic to apps and commands about apps. With that i did
-           accept that proxied request bypass all the chi middleware
+           to split traffic to apps and commands about apps. With that i did
+           accept that proxied requests bypass all the chi middleware
 
 ### URL Shape
 - **Fork:** Fixed vs arbitrary
-- **Chose:** I choose fixed names (<name>.localhost) against arbitrary
-- **Why:** I choose fixed names over arbitrary because it allows me to easily
+- **Chose:** I chose fixed names (<name>.localhost) against arbitrary
+- **Why:** I chose fixed names over arbitrary because it allows me to easily
            handle all inputs with the only big cost being no custom names
 
 ### App source name
