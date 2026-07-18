@@ -2,18 +2,33 @@
 A mini Platform-as-a-Service in Go. Deploy an app from a directory to a running 
 container with one HTTP call.
 
+## Quick start
+
+Requires Go and Docker Desktop running.
+
+    # terminal 1 — the platform
+    go run ./cmd/server
+
+    # terminal 2 — create the app, deploy a directory (must contain a Dockerfile)
+    curl -X POST -d '{"name":"myapp"}' localhost:8080/apps
+    go run ./cmd/platform deploy ./myapp
+
+    # your app is live
+    curl myapp.localhost:8080
+
 ## What works today
-- image building: tar over HTTP → POST /apps/{name}/deploy → tagged image
-- build-stream inspection: in-stream build failures returns real HTTP errors
-- container lifecycle: create/start with Docker-allocated host ports
-- state tracking: container ID, port, status in SQLite
-- redeploy: old container stopped + removed, replaced atomically
-- app metadata CRUD: create, get
+- Image building: tar over HTTP → POST /apps/{name}/deploy → tagged image
+- Build-stream inspection: in-stream build failures return real HTTP errors
+- Container lifecycle: create/start with Docker-allocated host ports
+- State tracking: container ID, port, status in SQLite
+- Redeploy: old container stopped + removed, replaced atomically
+- App metadata CRUD: create, get
+- Reverse proxy: <app>.localhost:8080 routes to the app's container — nobody types a port
+- CLI: platform deploy <dir> — tars the directory, deploys it, prints the URL
 
 ## In progress
- 
-- reverse proxy: <app>.localhost routing
-- CLI: platform deploy <dir>
+- Deployment to a real server (DigitalOcean)
+- Zero-downtime deploys: new container up and healthy before the old one dies — redeploys with no dropped requests
 
 ## Stack
 - Go · go-chi/chi · SQLite (modernc.org/sqlite) · Docker SDK (moby/moby/client)
