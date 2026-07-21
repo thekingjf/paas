@@ -30,8 +30,12 @@ func main() {
 	}
 
 	name := filepath.Base(filepath.Clean(dir))
+	addr := os.Getenv("PLATFORM_ADDR")
+	if addr == "" {
+		addr = "http://localhost:8080"
+	}
 	resp, err := http.Post(
-		"http://localhost:8080/apps/"+name+"/deploy",
+		addr+"/apps/"+name+"/deploy",
 		"application/x-tar",
 		buf,
 	)
